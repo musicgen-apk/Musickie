@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator Musik KIE.AI</title>
+    <title>Musickie - Putar Musik Kamu</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
         body { background: #f0f2f5; padding: 2rem 1rem; }
@@ -20,17 +20,24 @@
         .loading { color: #1a73e8; background: rgba(26, 115, 232, 0.1); }
         .success { color: #0f9d58; background: rgba(15, 157, 88, 0.1); }
         .error { color: #d93025; background: rgba(217, 48, 37, 0.1); }
+        .music-player { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #dadce0; }
+        .music-player h2 { color: #1a73e8; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .music-item { padding: 1.2rem; border: 1px solid #dadce0; border-radius: 6px; margin-bottom: 1rem; }
+        .music-item h3 { color: #202124; margin-bottom: 0.5rem; }
+        .music-item p { color: #5f6368; margin-bottom: 1rem; font-size: 0.95rem; }
+        audio { width: 100%; border-radius: 6px; }
         footer { text-align: center; margin-top: 1.5rem; color: #5f6368; font-size: 0.9rem; }
+        .refresh-btn { margin-top: 1rem; padding: 0.8rem 1.2rem; background: #34a853; color: white; border: none; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="wrapper">
-        <h1>Buat Musik dengan KIE.AI</h1>
+        <h1>Musickie - Buat & Putar Musik</h1>
 
         <form id="musicForm">
             <div class="form-group">
                 <label for="prompt">Deskripsi Musik:</label>
-                <textarea id="prompt" placeholder="Contoh: Lagu piano menenangkan dengan melodi lembut dan irama lambat" required></textarea>
+                <textarea id="prompt" placeholder="Contoh: Lagu piano menenangkan dengan melodi lembut" required></textarea>
             </div>
 
             <div class="form-group">
@@ -41,7 +48,6 @@
                     <option value="Pop">Pop</option>
                     <option value="Ambient">Ambient</option>
                     <option value="Rock">Rock</option>
-                    <option value="Blues">Blues</option>
                 </select>
             </div>
 
@@ -50,19 +56,21 @@
                 <input type="text" id="title" placeholder="Contoh: Meditasi Malam Hari" required>
             </div>
 
-            <div class="form-group">
-                <label for="callback">URL Callback (Opsional):</label>
-                <input type="url" id="callback" placeholder="https://alamat-kamu.com/callback">
-            </div>
-
-            <div class="status loading" id="loading">⏳ Sedang memproses permintaan... Tunggu sebentar ya!</div>
+            <div class="status loading" id="loading">⏳ Sedang memproses permintaan...</div>
             <button type="submit" class="btn">🎵 Buat Musik Sekarang</button>
 
             <div class="status success" id="success"></div>
             <div class="status error" id="error"></div>
         </form>
 
-        <footer>© 2026 | Dihost di Render • Terhubung ke KIE.AI</footer>
+        <!-- Bagian Pemutar Musik -->
+        <div class="music-player">
+            <h2>🎶 Daftar Musik Kamu</h2>
+            <button class="refresh-btn" onclick="loadMusicList()">🔄 Refresh Daftar</button>
+            <div id="musicList"></div>
+        </div>
+
+        <footer>© 2026 | Musickie Dihost di Render</footer>
     </div>
 
     <script>
@@ -71,6 +79,7 @@
         const success = document.getElementById('success');
         const error = document.getElementById('error');
 
+        // Kirim permintaan buat musik
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             loading.style.display = 'block';
@@ -80,8 +89,7 @@
             const data = {
                 prompt: document.getElementById('prompt').value,
                 style: document.getElementById('style').value,
-                title: document.getElementById('title').value,
-                callBackUrl: document.getElementById('callback').value
+                title: document.getElementById('title').value
             };
 
             try {
@@ -95,9 +103,10 @@
                 const result = await res.json();
 
                 if (res.ok) {
-                    success.textContent = `✅ Sukses! Detail Respons: ${JSON.stringify(result.data)}`;
+                    success.textContent = `✅ Sukses! Musik "${data.title}" sedang dibuat. ID: ${result.music_id} | Klik Refresh untuk melihat status.`;
                     success.style.display = 'block';
                     form.reset();
+                    loadMusicList();
                 } else {
                     error.textContent = `❌ Kesalahan: ${result.detail}`;
                     error.style.display = 'block';
@@ -108,6 +117,45 @@
                 error.style.display = 'block';
             }
         });
+
+        // Muat daftar musik & putar
+        async function loadMusicList() {
+            try {
+                const res = await fetch('/api/music-list');
+                const result = await res.json();
+                const musicList = document.getElementById('musicList');
+
+                if (Object.keys(result.music).length === 0) {
+                    musicList.innerHTML = "<p>Belum ada musik yang dibuat atau diproses.</p>";
+                    return;
+                }
+
+                musicList.innerHTML = "";
+                for (const [id, music] of Object.entries(result.music)) {
+                    const item = document.createElement('div');
+                    item.className = 'music-item';
+                    
+                    item.innerHTML = `
+                        <h3>${music.title}</h3>
+                        <p>Gaya: ${music.style} | Status: ${music.status}</p>
+                        ${music.audio_url ? 
+                            `<audio controls>
+                                <source src="${music.audio_url}" type="audio/mpeg">
+                                Browser kamu tidak mendukung pemutar audio.
+                            ` : 
+                            `<p>🔄 Tunggu sebentar atau refresh lagi untuk putar musik.</p>`
+                        }
+                    `;
+                    
+                    musicList.appendChild(item);
+                }
+            } catch (err) {
+                document.getElementById('musicList').innerHTML = `<p class="error">❌ Gagal memuat daftar musik: ${err.message}</p>`;
+            }
+        }
+
+        // Muat daftar saat halaman dibuka
+        window.onload = loadMusicList;
     </script>
 </body>
 </html>
