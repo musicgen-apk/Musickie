@@ -3,159 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Musickie - Putar Musik Kamu</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
-        body { background: #f0f2f5; padding: 2rem 1rem; }
-        .wrapper { max-width: 700px; margin: 0 auto; background: white; border-radius: 10px; padding: 2.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.08); }
-        h1 { color: #1a73e8; text-align: center; margin-bottom: 2rem; font-size: 1.8rem; }
-        .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.7rem; color: #5f6368; font-weight: 500; }
-        input, select, textarea { width: 100%; padding: 0.9rem 1.2rem; border: 1px solid #dadce0; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
-        textarea { min-height: 90px; resize: vertical; }
-        .btn { width: 100%; padding: 1rem; background: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; transition: background 0.3s; }
-        .btn:hover { background: #1557b0; }
-        .status { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; display: none; }
-        .loading { color: #1a73e8; background: rgba(26, 115, 232, 0.1); }
-        .success { color: #0f9d58; background: rgba(15, 157, 88, 0.1); }
-        .error { color: #d93025; background: rgba(217, 48, 37, 0.1); }
-        .music-player { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #dadce0; }
-        .music-player h2 { color: #1a73e8; margin-bottom: 1.5rem; font-size: 1.5rem; }
-        .music-item { padding: 1.2rem; border: 1px solid #dadce0; border-radius: 6px; margin-bottom: 1rem; }
-        .music-item h3 { color: #202124; margin-bottom: 0.5rem; }
-        .music-item p { color: #5f6368; margin-bottom: 1rem; font-size: 0.95rem; }
-        audio { width: 100%; border-radius: 6px; }
-        footer { text-align: center; margin-top: 1.5rem; color: #5f6368; font-size: 0.9rem; }
-        .refresh-btn { margin-top: 1rem; padding: 0.8rem 1.2rem; background: #34a853; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    <title>Musickie • AI Music Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Konfigurasi -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D3FD3',
+                        secondary: '#16181D',
+                        neutral: '#F5F7FA',
+                        dark: '#0F172A',
+                        light: '#FFFFFF',
+                        muted: '#64748B',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        error: '#EF4444'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'suno': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02)',
+                        'suno-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                    }
+                },
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto { content-visibility: auto; }
+            .text-gradient { background-clip: text; -webkit-background-clip: text; color: transparent; }
+            .bg-blur { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            .animate-fadeup { animation: fadeup 0.5s ease forwards; }
+            .animate-slidein { animation: slidein 0.6s ease forwards; }
+            @keyframes fadeup { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes slidein { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+            .audio-progress::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #5D3FD3; cursor: pointer; }
+            .audio-progress::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #5D3FD3; cursor: pointer; }
+        }
     </style>
 </head>
-<body>
-    <div class="wrapper">
-        <h1>Musickie - Buat & Putar Musik</h1>
-
-        <form id="musicForm">
-            <div class="form-group">
-                <label for="prompt">Deskripsi Musik:</label>
-                <textarea id="prompt" placeholder="Contoh: Lagu piano menenangkan dengan melodi lembut" required></textarea>
+<body class="font-inter bg-neutral text-dark min-h-screen flex flex-col">
+    <!-- Navbar Premium -->
+    <nav class="sticky top-0 z-50 bg-dark/95 bg-blur text-light border-b border-gray-800">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-primary text-2xl"><i class="fa fa-music"></i></span>
+                <h1 class="text-xl font-semibold tracking-tight">Musickie</h1>
             </div>
-
-            <div class="form-group">
-                <label for="style">Gaya Musik:</label>
-                <select id="style" required>
-                    <option value="Classical">Klasik</option>
-                    <option value="Jazz">Jazz</option>
-                    <option value="Pop">Pop</option>
-                    <option value="Ambient">Ambient</option>
-                    <option value="Rock">Rock</option>
-                </select>
+            <div class="hidden md:flex items-center gap-6">
+                <a href="#" class="text-sm text-muted hover:text-light transition-colors">Dashboard</a>
+                <a href="#" class="text-sm text-muted hover:text-light transition-colors">API Docs</a>
+                <a href="#" class="px-4 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                    <i class="fa fa-user-circle-o mr-1"></i> Akun
+                </a>
             </div>
-
-            <div class="form-group">
-                <label for="title">Judul Musik:</label>
-                <input type="text" id="title" placeholder="Contoh: Meditasi Malam Hari" required>
-            </div>
-
-            <div class="status loading" id="loading">⏳ Sedang memproses permintaan...</div>
-            <button type="submit" class="btn">🎵 Buat Musik Sekarang</button>
-
-            <div class="status success" id="success"></div>
-            <div class="status error" id="error"></div>
-        </form>
-
-        <!-- Bagian Pemutar Musik -->
-        <div class="music-player">
-            <h2>🎶 Daftar Musik Kamu</h2>
-            <button class="refresh-btn" onclick="loadMusicList()">🔄 Refresh Daftar</button>
-            <div id="musicList"></div>
+            <button class="md:hidden text-light">
+                <i class="fa fa-bars"></i>
+            </button>
         </div>
+    </nav>
 
-        <footer>© 2026 | Musickie Dihost di Render</footer>
-    </div>
+    <!-- Main Content -->
+    <main class="flex-1 container mx-auto px-4 py-8 md:py-12">
+        <div class="max-w-3xl mx-auto">
+            <!-- Header Section -->
+            <div class="text-center mb-10 animate-fadeup" style="animation-delay: 0.1s;">
+                <h2 class="text-[clamp(2rem,5vw,3rem)] font-bold bg-gradient-to-r from-primary to-purple-600 text-gradient mb-4">
+                    AI Music Generator
+                </h2>
+                <p class="text-muted text-lg max-w-xl mx-auto">
+                    Hasilkan musik berkualitas studio dengan prompt sederhana – langsung bisa diputar dan diunduh!
+                </p>
+            </div>
+
+            <!-- Generate Form -->
+            <div class="bg-light rounded-xl shadow-suno p-6 md:p-8 mb-8 animate-fadeup" style="animation-delay: 0.2s;">
+                <form id="generateForm" class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-dark">Deskripsi Musik / Lirik</label>
+                        <textarea 
+                            id="prompt" 
+                            placeholder="Contoh: Lagu piano klasik dengan melodi lembut dan irama lambat..." 
+                            class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none h-24"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-dark">Gaya Musik</label>
+                            <select 
+                                id="style" 
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                                required
+                            >
+                                <option value="Classical">Klasik</option>
+                                <option value="Pop">Pop</option>
+                                <option value="Jazz">Jazz</option>
+                                <option value="Rock">Rock</option>
+                                <option value="Electronic">Elektronik</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-dark">Judul Musik</label>
+                            <input 
+                                type="text" 
+                                id="title" 
+                                placeholder="Nama lagu kamu..." 
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button 
+                            type="submit" 
+                            id="generateBtn"
+                            class="w-full py-3 bg-primary hover:bg-primary/90 text-light rounded-lg font-medium transition-all hover:shadow-suno-hover flex items-center justify-center gap-2"
+                        >
+                            <i class="fa fa-music"></i>
+                            <span>Generate Musik</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Status Indicator -->
+                <div id="status" class="hidden mt-4 rounded-lg p-3 text-center"></div>
+            </div>
+
+            <!-- Music List Section -->
+            <div class="animate-fadeup" style="animation-delay: 0.3s;">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fa fa-music text-primary"></i>
+                    Daftar Musik Kamu
+                </h3>
+                <div id="musicList" class="grid grid-cols-1 gap-4">
+                    <div class="bg-light rounded-lg shadow-suno p-4 text-center text-muted">
+                        Belum ada lagu yang di-generate. Silakan buat lagu terlebih dahulu!
+                    </div>
+                </div>
+                <button 
+                    id="refreshBtn" 
+                    class="mt-4 px-4 py-2 bg-dark/5 hover:bg-dark/10 text-dark rounded-lg font-medium transition-all"
+                >
+                    <i class="fa fa-refresh mr-1"></i> Refresh Daftar
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Premium -->
+    <footer class="bg-dark/95 text-muted py-6 border-t border-gray-800 mt-8">
+        <div class="container mx-auto px-4 text-center text-sm">
+            <p>&copy; 2024 Musickie • Powered by KIE.AI & Render</p>
+            <div class="mt-2 flex justify-center gap-4">
+                <a href="#" class="hover:text-light transition-colors"><i class="fa fa-github"></i></a>
+                <a href="#" class="hover:text-light transition-colors"><i class="fa fa-twitter"></i></a>
+                <a href="#" class="hover:text-light transition-colors"><i class="fa fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        const form = document.getElementById('musicForm');
-        const loading = document.getElementById('loading');
-        const success = document.getElementById('success');
-        const error = document.getElementById('error');
+        // State Management
+        let isGenerating = false;
+        let activeAudio = null;
 
-        // Kirim permintaan buat musik
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            loading.style.display = 'block';
-            success.style.display = 'none';
-            error.style.display = 'none';
+        // DOM Elements
+        const generateForm = document.getElementById('generateForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusEl = document.getElementById('status');
+        const musicList = document.getElementById('musicList');
+        const refreshBtn = document.getElementById('refreshBtn');
 
-            const data = {
-                prompt: document.getElementById('prompt').value,
-                style: document.getElementById('style').value,
-                title: document.getElementById('title').value
-            };
+        // Show Status
+        const showStatus = (message, type = "info") => {
+            statusEl.textContent = message;
+            statusEl.classList.remove('hidden', 'bg-success/10', 'bg-error/10', 'bg-warning/10');
+            statusEl.classList.add('block', `bg-${type}/10`, `text-${type}`);
+        };
 
-            try {
-                const res = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
+        // Hide Status
+        const hideStatus = () => {
+            statusEl.classList.add('hidden');
+            statusEl.className = 'mt-4 rounded-lg p-3 text-center';
+        };
 
-                loading.style.display = 'none';
-                const result = await res.json();
+        // Format Durasi
+        const formatDuration = (sec) => {
+            const mins = Math.floor(sec / 60);
+            const secs = Math.floor(sec % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        };
 
-                if (res.ok) {
-                    success.textContent = `✅ Sukses! Musik "${data.title}" sedang dibuat. ID: ${result.music_id} | Klik Refresh untuk melihat status.`;
-                    success.style.display = 'block';
-                    form.reset();
-                    loadMusicList();
-                } else {
-                    error.textContent = `❌ Kesalahan: ${result.detail}`;
-                    error.style.display = 'block';
-                }
-            } catch (err) {
-                loading.style.display = 'none';
-                error.textContent = `❌ Kesalahan Koneksi: ${err.message}`;
-                error.style.display = 'block';
-            }
-        });
+        // Update Progress Bar
+        const updateAudioProgress = (audioEl, progressEl, timeEl) => {
+            progressEl.value = (audioEl.currentTime / audioEl.duration) * 100 || 0;
+            timeEl.textContent = `${formatDuration(audioEl.currentTime)} / ${formatDuration(audioEl.duration)}`;
+        };
 
-        // Muat daftar musik & putar
-        async function loadMusicList() {
+        // Load Music List
+        const loadMusicList = async () => {
             try {
                 const res = await fetch('/api/music-list');
-                const result = await res.json();
-                const musicList = document.getElementById('musicList');
-
-                if (Object.keys(result.music).length === 0) {
-                    musicList.innerHTML = "<p>Belum ada musik yang dibuat atau diproses.</p>";
+                const data = await res.json();
+                
+                if (Object.keys(data).length === 0) {
+                    musicList.innerHTML = `
+                        <div class="bg-light rounded-lg shadow-suno p-4 text-center text-muted">
+                            Belum ada lagu yang di-generate. Silakan buat lagu terlebih dahulu!
+                        </div>
+                    `;
                     return;
                 }
 
-                musicList.innerHTML = "";
-                for (const [id, music] of Object.entries(result.music)) {
-                    const item = document.createElement('div');
-                    item.className = 'music-item';
+                musicList.innerHTML = '';
+                Object.values(data).forEach((music, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-light rounded-xl shadow-suno p-5 transition-all hover:shadow-suno-hover animate-fadeup';
+                    card.style.animationDelay = `${0.1 * index}s`;
                     
-                    item.innerHTML = `
-                        <h3>${music.title}</h3>
-                        <p>Gaya: ${music.style} | Status: ${music.status}</p>
-                        ${music.audio_url ? 
-                            `<audio controls>
-                                <source src="${music.audio_url}" type="audio/mpeg">
-                                Browser kamu tidak mendukung pemutar audio.
-                            ` : 
-                            `<p>🔄 Tunggu sebentar atau refresh lagi untuk putar musik.</p>`
-                        }
+                    card.innerHTML = `
+                        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <!-- Sampul & Informasi -->
+                            <div class="flex items-start gap-4">
+                                ${music.cover_url ? `
+                                    <img src="${music.cover_url}" alt="${music.title}" 
+                                        class="rounded-lg w-24 h-24 object-cover shadow-sm">
+                                ` : `
+                                    <div class="rounded-lg w-24 h-24 bg-primary/10 flex items-center justify-center">
+                                        <i class="fa fa-music text-3xl text-primary"></i>
+                                    </div>
+                                `}
+                                <div>
+                                    <h4 class="font-semibold text-lg">${music.title}</h4>
+                                    <div class="flex flex-wrap gap-2 mt-1">
+                                        <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">${music.style}</span>
+                                        <span class="text-xs px-2 py-1 bg-dark/5 text-dark rounded-full">${formatDuration(music.duration)}</span>
+                                        <span class="text-xs px-2 py-1 ${music.status === 'COMPLETED' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'} rounded-full">
+                                            ${music.status === 'COMPLETED' ? 'Selesai' : 'Diproses'}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-muted mt-2 line-clamp-2">${music.prompt}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Pemutar Audio & Tombol -->
+                            <div class="w-full mt-3">
+                                ${music.status === 'COMPLETED' ? `
+                                    <div class="bg-neutral rounded-lg p-3">
+                                        <!-- Kontrol Play/Pause -->
+                                        <div class="flex items-center gap-3 mb-2">
+                                            <button class="play-btn w-10 h-10 rounded-full bg-primary text-light flex items-center justify-center" 
+                                                data-audio-id="${music.task_id}">
+                                                <i class="fa fa-play"></i>
+                                            </button>
+                                            <span class="text-sm duration-text">0:00 / ${formatDuration(music.duration)}</span>
+                                        </div>
+                                        
+                                        <!-- Progress Bar -->
+                                        <input type="range" min="0" max="100" value="0" 
+                                            class="audio-progress w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                            data-audio-id="${music.task_id}">
+                                        
+                                        <!-- Kontrol Volume -->
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <i class="fa fa-volume-up text-muted"></i>
+                                            <input type="range" min="0" max="100" value="80" 
+                                                class="volume-control w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                                data-audio-id="${music.task_id}">
+                                            
+                                            <!-- Tombol Unduh -->
+                                            <div class="ml-auto flex gap-2">
+                                                <a href="${music.audio_url}" download="${music.title}.mp3" 
+                                                    class="px-3 py-1.5 bg-success/10 text-success rounded-lg text-sm hover:bg-success/20 transition-colors">
+                                                    <i class="fa fa-download"></i> Audio
+                                                </a>
+                                                <button onclick="downloadCover('${music.cover_url}', '${music.title}')"
+                                                    class="px-3 py-1.5 bg-dark/5 text-dark rounded-lg text-sm hover:bg-dark/10 transition-colors">
+                                                    <i class="fa fa-image"></i> Sampul
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Audio Element Tersembunyi -->
+                                        <audio class="hidden" id="audio-${music.task_id}" src="${music.audio_url}">
+                                    </div>
+                                ` : `
+                                    <div class="bg-neutral rounded-lg p-3 text-center text-warning">
+                                        <i class="fa fa-spinner fa-spin mr-1"></i> Menunggu musik selesai diproses...
+                                    </div>
+                                `}
+                            </div>
+                        </div>
                     `;
-                    
-                    musicList.appendChild(item);
-                }
-            } catch (err) {
-                document.getElementById('musicList').innerHTML = `<p class="error">❌ Gagal memuat daftar musik: ${err.message}</p>`;
-            }
-        }
+                    musicList.appendChild(card);
+                });
 
-        // Muat daftar saat halaman dibuka
-        window.onload = loadMusicList;
-    </script>
-</body>
-</html>
+                // Tambah Event Listener untuk Pemutar Audio
+                document.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const audioId = this.dataset.audioId
